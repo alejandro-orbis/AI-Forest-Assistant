@@ -374,6 +374,10 @@ This repository contains a public demonstration version intended for educational
 
 Some advanced workflows, prompts and production components may be simplified or intentionally omitted.
 
+The legal and regulatory assistant included in this project is designed to provide well-grounded informational guidance based on predefined context and AI-generated responses. However, laws, regulations and administrative procedures may change over time and may vary by region.
+
+This system should not be considered a substitute for professional legal advice or official regulatory guidance.
+
 ---
 
 ## 📄 License
