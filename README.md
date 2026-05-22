@@ -1,5 +1,8 @@
-# AI-Forest-Assistant
-🌲 AI Forest Assistant - Omnichannel forest monitoring, alerting, and management system built with n8n, Gemini AI, WhatsApp API, PostgreSQL &amp; PostGIS. Automates fire alerts, pest tracking, permit requests, legal RAG, and weekly dashboards.
+# AI Forest Assistant
+
+🌲 **AI Forest Assistant** is an omnichannel forest monitoring, alerting, and management system built with **n8n**, **Gemini AI**, **WhatsApp Business API**, **PostgreSQL/PostGIS**, **Google Maps**, **OpenWeatherMap**, **Google Sheets**, and **Gmail**.
+
+It automates fire reports, pest tracking, permit requests, work reports, legal queries, supervisor escalation, weather-based fire alerts, and weekly dashboard reporting.
 
 [![n8n](https://img.shields.io/badge/n8n-Workflow-orange?style=flat-square)](https://n8n.io/)
 [![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4?style=flat-square&logo=google)](https://ai.google.dev)
@@ -9,352 +12,518 @@
 [![Google Maps](https://img.shields.io/badge/Google_Maps-API-4285F4?style=flat-square&logo=googlemaps)](https://mapsplatform.google.com/)
 [![OpenWeatherMap](https://img.shields.io/badge/OpenWeatherMap-API-FC4C02?style=flat-square)](https://openweathermap.org/api)
 [![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
-[![Status](https://img.shields.io/badge/Status-Production-22c55e?style=flat-square)](https://github.com/alejandro-orbis)
+[![Status](https://img.shields.io/badge/Status-MVP-22c55e?style=flat-square)](https://github.com/alejandro-orbis)
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Language | File |
-|----------|------|
+|---|---|
 | English | [README.md](README.md) |
 | Spanish | [README.ES.md](README.ES.md) |
 
 ---
 
-## 🎯 What does it do?
+## What it does
 
-Omnichannel forest monitoring, alerting, and management system. Forestry workers can interact via **WhatsApp** to:
+Forestry workers, citizens, or field teams can interact with the assistant through WhatsApp.
 
 | Function | Description |
-|----------|-------------|
-| **Report Fire** | User reports smoke/fire, AI classifies and validates coordinates |
-| **Report Pest** | Detects pests (pine processionary, red weevil, etc.) and creates case |
-| **Request Permit** | Processes felling/pruning/clearing permit requests |
-| **Legal Query** | Answers forestry regulations (Law 43/2003, pruning seasons, distances) |
-| **Work Report** | Logs daily work hours, tasks, and location |
-| **Emergency Alert** | Every 4 hours, calculates fire risk and alerts brigade members |
-| **Escalate to Supervisor** | Critical incidents trigger immediate supervisor notification |
-| **Reset Conversation** | User can type `reset` to clear context |
+|---|---|
+| Fire report | Reports smoke, fire, flames, burned areas, or possible thermal focus |
+| Pest report | Detects pests such as pine processionary, red weevil, bark beetles, or tree diseases |
+| Permit request | Processes requests for pruning, felling, clearing, or forestry authorizations |
+| Legal query | Answers forestry regulation questions with a legal-context branch |
+| Work report | Logs daily work hours, field tasks, and locations |
+| Weather alert | Calculates fire risk from weather data and sends alerts |
+| Supervisor escalation | Sends critical cases to a supervisor through WhatsApp |
+| Pending coordinates | Associates a later coordinate message with the original pending case |
+| Dashboard | Sends weekly metrics through Google Sheets, Gmail, and WhatsApp |
 
 ---
 
-## ✨ Key Features
+## Key features
 
 | Feature | Description |
-|---------|-------------|
-| **Omnichannel** | WhatsApp Business API (primary), email (reports), webhook (optional dashboard) |
-| **AI Classification** | Gemini classifies: FIRE, PEST, PERMIT, INCIDENT, LEGAL_QUERY, WORK_REPORT |
-| **Geolocation** | Captures coordinates, validates with PostGIS, reverse geocoding with Google Maps API |
-| **State Machine** | Associates coordinates with pending cases automatically |
-| **Legal RAG** | Answers regulations with layered legal context (fire, drones, AI, business, permits) |
-| **Smart Escalation** | Notifies supervisor via WhatsApp for HIGH priority cases |
-| **Weather Alerts** | Every 4 hours, calculates risk using temperature, humidity, wind speed |
-| **Dashboard** | Weekly metrics via email, WhatsApp, and Google Sheets |
-| **Rate Limiting** | 15 messages per minute per user (prevents spam in emergencies) |
-| **PostGIS** | Spatial queries, distance calculations, location triggers |
+|---|---|
+| WhatsApp-first workflow | WhatsApp Business API is used for incoming and outgoing messages |
+| Gemini classification | Gemini classifies messages into fire, pest, permit, incident, legal query, work report, or other |
+| Conversation state | Stores pending cases and associates follow-up coordinates automatically |
+| Reverse geocoding | Converts coordinates into readable locations with Google Maps API |
+| PostgreSQL + PostGIS | Stores cases and supports geospatial data |
+| Smart escalation | Sends supervisor alerts for high-priority cases such as fires |
+| Legal RAG branch | Uses layered forestry regulation context for legal questions |
+| Weather alerts | Uses weather data to estimate fire risk levels |
+| Dashboard metrics | Generates weekly metrics and stores historical snapshots |
+| Rate limiting | Prevents spam and repeated processing per conversation |
 
 ---
 
-## 🏗️ Architecture
+## High-level architecture
 
+```text
 Webhook WhatsApp
-│
-└── Parse WhatsApp (normalizes text, location, images, documents)
-│
-└── Rate Limiter (15 msg/minuto)
-│
-└── IF Legal Query? (regex detection)
-│ ├── YES → Legal RAG Branch (Gemini with legal context)
-│ └── NO → Gemini Classifier (classifies intent)
-│
-└── Process Classification
-│
-└── Validate Coordinates
-│
-└── Reverse Geocoding (Google Maps API)
-│
-└── IF Missing Coordinates?
-│ ├── YES → Save State → Ask for location
-│ └── NO → Prepare Registration
-│
-└── Switch (routes to appropriate table)
-│ ├── FIRE → forest_incidents
-│ ├── PEST → pest_cases
-│ ├── PERMIT → permits
-│ ├── WORK_REPORT → work_reports
-│ └── INCIDENT → forest_incidents
-│
-└── Save to PostgreSQL + PostGIS
-│
-└── Prepare Response (with case_id + readable location)
-│
-└── IF Notify Supervisor? (HIGH priority)
-│ ├── YES → Send WhatsApp to Supervisor
-│ └── NO → (skip)
-│
-└── Send WhatsApp to User
-│
-└── Update Dashboard Metrics (daily at 8am)
-│ ├── Google Sheets (historical)
-│ ├── Email to Supervisor
-│ └── WhatsApp to Supervisor
-
+└── Parse WhatsApp
+    └── Rate Limiter
+        └── PostgreSQL: Read Conversation State
+            └── IF Pending Coordinates?
+                ├── YES
+                │   └── Extract Coordinates
+                │       └── Build SQL Update
+                │           └── Update Pending Case
+                │               └── Reverse Geocoding
+                │                   └── Prepare User Response
+                │                       ├── Send WhatsApp to User
+                │                       ├── Clear Conversation State
+                │                       └── IF Escalate Updated Case?
+                │                           ├── YES → Send WhatsApp to Supervisor
+                │                           └── NO → Do Nothing
+                └── NO
+                    └── IF Legal Query?
+                        ├── YES → Legal RAG → Save Query → Send Response
+                        └── NO
+                            └── Gemini Classifier
+                                └── Process Classification
+                                    └── IF Create Case?
+                                        ├── NO → Send Casual Response
+                                        └── YES
+                                            └── Validate Coordinates
+                                                └── IF Coordinates Valid?
+                                                    ├── YES → Reverse Geocoding → Save Case
+                                                    └── NO → Save Pending State → Ask for Coordinates
+```
 
 ---
 
-## 🧠 State Machine (Coordinates Association)
+## Conversation state for pending coordinates
 
-| State | Description | Next |
-|-------|-------------|------|
-| **waiting_coords** | System is waiting for coordinates from user | When coordinates received → Update case |
-| **completed** | Case updated with coordinates → Clear state | End |
+The system handles multi-turn conversations where the user first reports a case and sends the location later.
 
-**Flow:**
-1. User sends: "Smoke in the forest" → System creates case → Saves state → Asks for location
-2. User sends: "40.4168, -3.7038" → System detects pending state → Updates case → Clears state → Confirms
+| State | Description | Next step |
+|---|---|---|
+| `waiting_coords` | The system is waiting for coordinates for an existing case | User sends coordinates |
+| completed | Case is updated and state is cleared | End |
+
+Example:
+
+```text
+User: Hay humo en el bosque
+Assistant: Necesito la ubicación exacta.
+
+User: 40.4168, -3.7038
+Assistant: Caso completado con coordenadas.
+Supervisor: Case updated with location.
+```
 
 ---
 
-## 🛠️ Tech Stack
+## Tech stack
 
 | Tool | Usage |
-|------|-------|
-| [n8n](https://n8n.io/) | Workflow orchestration |
-| [Gemini AI](https://ai.google.dev) | Intent classification + Legal RAG |
-| [WhatsApp Business API](https://developers.facebook.com/docs/whatsapp) | Incoming/outgoing messaging |
-| [PostgreSQL](https://www.postgresql.org/) + [PostGIS](https://postgis.net/) | Storage + geospatial queries |
-| [Google Maps API](https://mapsplatform.google.com/) | Reverse geocoding |
-| [OpenWeatherMap](https://openweathermap.org/api) | Weather data for fire risk |
-| [Google Sheets](https://sheets.google.com) | Dashboard history |
-| [Gmail](https://gmail.com) | Email notifications |
+|---|---|
+| n8n | Workflow orchestration |
+| Gemini AI | Intent classification and legal responses |
+| WhatsApp Business API | Messaging channel |
+| PostgreSQL | Main database |
+| PostGIS | Geospatial storage and queries |
+| Google Maps API | Reverse geocoding |
+| OpenWeatherMap | Weather data for fire risk |
+| Google Sheets | Dashboard history |
+| Gmail | Email summaries and notifications |
 
 ---
 
-## 📸 Screenshots
+## Workflows
 
-| Workflow Overview | WhatsApp Fire Alert | Legal Query Response | Dashboard Metrics |
+| Workflow | File | Purpose |
+|---|---|---|
+| Core | `workflows/AI_Forest_Assistant_01_Core_WhatsApp.json` | Main WhatsApp case workflow |
+| Weather alerts | `workflows/AI_Forest_Assistant_02_Alertas_Clima.json` | Fire-risk weather alerts |
+| Dashboard | `workflows/AI_Forest_Assistant_03_Dashboard_Metricas.json` | Metrics, reporting, Sheets, email, WhatsApp |
+
+---
+
+## Project structure
+
+```text
+AI-Forest-Assistant/
+├── README.md
+├── README.ES.md
+├── LICENSE
+├── workflows/
+│   ├── AI_Forest_Assistant_01_Core_WhatsApp.json
+│   ├── AI_Forest_Assistant_02_Alertas_Clima.json
+│   └── AI_Forest_Assistant_03_Dashboard_Metricas.json
+├── database/
+│   ├── schema.sql
+│   ├── triggers.sql
+│   └── indexes.sql
+└── assets/
+    └── screenshots/
+        ├── workflow_overview.png
+        ├── fire_alert_whatsapp.png
+        ├── legal_query_whatsapp.png
+        ├── dashboard_metrics.png
+        ├── postgres_tables.png
+        ├── postgis_location.png
+        ├── reverse_geocoding.png
+        └── google_sheets_dashboard.png
+```
+
+---
+
+## Screenshots
+
+| Workflow overview | WhatsApp fire alert | Legal query response | Dashboard metrics |
 |---|---|---|---|
-| ![Overview](assets/screenshots/workflow_overview.png) | ![Fire Alert](assets/screenshots/fire_alert_whatsapp.png) | ![Legal Query](assets/screenshots/legal_query_whatsapp.png) | ![Dashboard](assets/screenshots/dashboard_metrics.png) |
+| ![Workflow overview](assets/screenshots/workflow_overview.png) | ![Fire alert](assets/screenshots/fire_alert_whatsapp.png) | ![Legal query](assets/screenshots/legal_query_whatsapp.png) | ![Dashboard](assets/screenshots/dashboard_metrics.png) |
 
-| PostgreSQL Tables | PostGIS Location | Reverse Geocoding | Google Sheets Dashboard |
+| PostgreSQL tables | PostGIS location | Reverse geocoding | Google Sheets dashboard |
 |---|---|---|---|
-| ![Postgres](assets/screenshots/postgres_tables.png) | ![PostGIS](assets/screenshots/postgis_location.png) | ![Geocoding](assets/screenshots/reverse_geocoding.png) | ![Sheets](assets/screenshots/google_sheets_dashboard.png) |
+| ![PostgreSQL tables](assets/screenshots/postgres_tables.png) | ![PostGIS location](assets/screenshots/postgis_location.png) | ![Reverse geocoding](assets/screenshots/reverse_geocoding.png) | ![Google Sheets dashboard](assets/screenshots/google_sheets_dashboard.png) |
 
 ---
 
-## 📁 Project Structure
-
-Webhook WhatsApp
-│
-└── Parse WhatsApp (normalizes text, location, images, documents)
-│
-└── Rate Limiter (15 msg/minuto)
-│
-└── PostgreSQL: Read State (check pending coordinates)
-│
-├── IF Pending State? (has_pending = true)
-│ ├── YES → Extract Coordinates → Build SQL → Update Case → Reverse Geocoding → Clear State → Send Confirmation
-│ └── NO → IF Legal Query? (regex detection)
-│ ├── YES → Legal RAG Branch (Gemini with legal context)
-│ └── NO → Gemini Classifier (classifies intent)
-│
-└── Process Classification
-│
-└── Validate Coordinates
-│
-└── Reverse Geocoding (Google Maps API)
-│
-└── IF Missing Coordinates?
-│ ├── YES → Save State → Ask for location
-│ └── NO → Prepare Registration
-│
-└── Switch (routes to appropriate table)
-│ ├── FIRE → forest_incidents
-│ ├── PEST → pest_cases
-│ ├── PERMIT → permits
-│ ├── WORK_REPORT → work_reports
-│ └── INCIDENT → forest_incidents
-│
-└── Save to PostgreSQL + PostGIS
-│
-└── Prepare Response (with case_id + readable location)
-│
-└── IF Notify Supervisor? (HIGH priority)
-│ ├── YES → Send WhatsApp to Supervisor
-│ └── NO → (skip)
-│
-└── Send WhatsApp to User
-│
-└── Dashboard (daily at 8am)
-├── Google Sheets (historical)
-├── Email to Supervisor
-└── WhatsApp to Supervisor
-
----
-
-## 🚀 Setup Guide
+## Setup guide
 
 ### 1. Prerequisites
 
-- n8n instance (self-hosted v2.10+ or n8n Cloud)
-- PostgreSQL 13+ with PostGIS extension
+- n8n instance, self-hosted or cloud
+- PostgreSQL 13+ with PostGIS enabled
 - Meta for Developers account with WhatsApp Business API access
-- Google Cloud account (Gemini AI + Maps Platform)
+- Google Cloud account for Gemini AI and Google Maps
 - OpenWeatherMap account
-- Google Sheets account (for dashboard history)
-- Gmail account (for email notifications)
+- Google Sheets account
+- Gmail account
 
-### 2. Configure credentials in n8n
+### 2. Environment variables
 
-| Credential | Where to get |
-|------------|--------------|
-| `GEMINI_API_KEY` | [aistudio.google.com](https://aistudio.google.com) |
-| `META_ACCESS_TOKEN` | Meta for Developers → App → WhatsApp → API Settings |
-| `WHATSAPP_PHONE_NUMBER_ID` | Meta for Developers → WhatsApp → API Settings |
-| `GOOGLE_MAPS_API_KEY` | Google Cloud Console → APIs & Services → Credentials |
-| `OPENWEATHER_API_KEY` | [openweathermap.org](https://openweathermap.org/api) |
-| PostgreSQL | Your PostgreSQL connection string |
-| Google Sheets OAuth | n8n built-in OAuth |
-| Gmail OAuth | n8n built-in OAuth |
+Store all credentials as environment variables. Do not hardcode secrets inside workflow nodes.
 
-### 3. Database setup
+```env
+GEMINI_API_KEY=
+META_ACCESS_TOKEN=
+META_VERIFY_TOKEN=
+WHATSAPP_PHONE_NUMBER_ID=
+GOOGLE_MAPS_API_KEY=
+OPENWEATHER_API_KEY=
+SUPERVISOR_WHATSAPP=
+SUPERVISOR_EMAIL=
+RATE_LIMIT_PER_MINUTE=15
+```
 
-Run the following SQL scripts in order:
+### 3. n8n credentials
+
+| Credential | Usage |
+|---|---|
+| PostgreSQL | Database connection |
+| Google Sheets OAuth | Dashboard historical rows |
+| Gmail OAuth | Email summaries |
+| WhatsApp token via env vars | WhatsApp Business API |
+| Gemini API key via env vars | Classification and legal responses |
+| Google Maps API key via env vars | Reverse geocoding |
+| OpenWeatherMap API key via env vars | Weather risk alerts |
+
+### 4. Database setup
+
+Run the database scripts in order:
 
 ```bash
 psql -U postgres -f database/schema.sql
 psql -U postgres -f database/triggers.sql
 psql -U postgres -f database/indexes.sql
-4. Create Google Sheets dashboard
-Create a new spreadsheet: sheets.new
+```
 
-Name it: AI Forest Assistant - Dashboard
+Enable PostGIS if it is not already enabled:
 
-Create a sheet named Dashboard
+```sql
+CREATE EXTENSION IF NOT EXISTS postgis;
+```
 
-Add headers: FECHA, INCIDENTES_TOTAL, ALERTAS_TOTAL, CONSULTAS_LEGALES, TOP_UBICACIONES, INCIDENTES_ALTA, INCIDENTES_MEDIA, INCIDENTES_BAJA, INCENDIOS, PLAGAS, PERMISOS, INCIDENCIAS, PARTES_TRABAJO
+### 5. Google Sheets dashboard
 
-Copy the Sheet ID from the URL
+Create a Google Sheet named:
 
-5. Import workflows to n8n
-In n8n: ... menu → Import from File → select:
+```text
+AI Forest Assistant - Dashboard
+```
 
-Workflow	File	Purpose
-Core	workflows/AI_Forest_Assistant_01_Core_WhatsApp.json	Main message processing
-Weather Alerts	workflows/AI_Forest_Assistant_02_Alertas_Clima.json	Fire risk every 4h
-Dashboard	workflows/AI_Forest_Assistant_03_Dashboard_Metricas.json	Weekly metrics
-6. Configure WhatsApp webhook
-Field	Value
-Callback URL	https://your-n8n.com/webhook/omnichannel-webhook
-Verify Token	Your META_VERIFY_TOKEN
-7. Activate workflows
-Toggle each workflow to Active in n8n.
+Create or rename a tab:
 
-📊 Database Structure
-Table: forest_incidents
-Column	Type	Description
-id	UUID	Primary key
-case_id	TEXT	User-friendly ID (FOR-XXXXX)
-incident_type	TEXT	FIRE, INCIDENT, OTHER
-priority	TEXT	HIGH, MEDIUM, LOW
-latitude	DOUBLE	Decimal degrees
-longitude	DOUBLE	Decimal degrees
-location	GEOGRAPHY	PostGIS point
-parcela	TEXT	Plot number
-status	TEXT	OPEN, CLOSED
-metadata	JSONB	Additional data
-Table: permits
-Column	Type	Description
-permit_type	TEXT	FELLING, PRUNING, CLEARING
-applicant_name	TEXT	User's full name
-urgency	TEXT	HIGH, MEDIUM, LOW
-status	TEXT	PENDING, APPROVED, REJECTED
-Table: pest_cases
-Column	Type	Description
-pest_type	TEXT	pine processionary, red weevil
-affected_tree	TEXT	pine, palm, oak
-severity	TEXT	HIGH, MEDIUM, LOW
-status	TEXT	OPEN, CLOSED
-Table: work_reports
-Column	Type	Description
-worker_name	TEXT	User's name
-hours_worked	DECIMAL	Hours worked
-tasks_completed	TEXT	Description of tasks
-location_text	TEXT	Textual location
-Table: queries
-Column	Type	Description
-query_type	TEXT	LEGAL_QUERY
-question	TEXT	User's question
-answer	TEXT	Gemini's response
-user_phone	TEXT	User's phone number
-Table: fire_alerts
-Column	Type	Description
-zone_name	TEXT	Forest zone name
-temperature	DECIMAL	°C
-humidity	DECIMAL	%
-wind_speed	DECIMAL	km/h
-fire_risk	TEXT	EXTREME, HIGH, MODERATE, LOW
-alert_sent	BOOLEAN	Whether alert was sent
-Table: conversation_state
-Column	Type	Description
-user_phone	TEXT	Primary key
-current_state	TEXT	waiting_coords
-pending_case_id	TEXT	Case waiting for coordinates
-pending_type	TEXT	FIRE, PEST, PERMIT, INCIDENT
-PostGIS Triggers
-The location column is automatically updated from latitude/longitude on INSERT or UPDATE:
+```text
+Dashboard
+```
 
-sql
+Recommended headers:
+
+```text
+FECHA
+INCIDENTES_TOTAL
+INCIDENTES_ALTA
+INCIDENTES_MEDIA
+INCIDENTES_BAJA
+INCENDIOS
+PLAGAS
+PERMISOS
+INCIDENCIAS
+PARTES_TRABAJO
+CONSULTAS_LEGALES
+ALERTAS_TOTAL
+ALERTAS_EXTREMO
+ALERTAS_ALTO
+ALERTAS_MODERADO
+ALERTAS_BAJO
+TOP_UBICACIONES
+INCIDENTES_POR_TIPO_JSON
+ALERTAS_JSON
+GENERADO_EN
+```
+
+### 6. Import workflows into n8n
+
+In n8n, go to:
+
+```text
+Menu → Import from File
+```
+
+Import the workflow JSON files from the `workflows/` folder.
+
+### 7. Configure WhatsApp webhook
+
+| Field | Value |
+|---|---|
+| Callback URL | `https://your-n8n-domain.com/webhook/omnichannel-webhook` |
+| Verify Token | `META_VERIFY_TOKEN` |
+| Webhook events | WhatsApp messages |
+
+### 8. Activate workflows
+
+Activate the three workflows in n8n:
+
+- Core WhatsApp workflow
+- Weather alerts workflow
+- Dashboard metrics workflow
+
+---
+
+## Database structure
+
+### `forest_incidents`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `case_id` | TEXT | User-friendly case ID |
+| `incident_type` | TEXT | Fire, incident, or other general case |
+| `description` | TEXT | Case summary |
+| `priority` | TEXT | ALTA, MEDIA, BAJA |
+| `reporter_name` | TEXT | User name |
+| `reporter_phone` | TEXT | WhatsApp number |
+| `latitude` | DOUBLE PRECISION | Latitude |
+| `longitude` | DOUBLE PRECISION | Longitude |
+| `location` | GEOGRAPHY/GEOMETRY | PostGIS point |
+| `parcela` | TEXT | Plot number |
+| `status` | TEXT | ABIERTO, CERRADO |
+| `ai_classification` | TEXT | AI output category |
+| `assigned_to` | TEXT | Assigned team/person |
+| `metadata` | JSONB | Additional details |
+
+### `pest_cases`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `pest_type` | TEXT | Pest or disease, e.g. procesionaria, picudo rojo |
+| `affected_tree` | TEXT | Affected tree/species, e.g. pino, palmera |
+| `description` | TEXT | Case summary |
+| `latitude` | DOUBLE PRECISION | Latitude |
+| `longitude` | DOUBLE PRECISION | Longitude |
+| `severity` | TEXT | ALTA, MEDIA, BAJA |
+| `status` | TEXT | ABIERTO, CERRADO |
+| `metadata` | JSONB | Case ID and additional fields |
+
+### `permits`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `permit_type` | TEXT | Felling, pruning, clearing, etc. |
+| `applicant_name` | TEXT | Applicant name |
+| `applicant_phone` | TEXT | Applicant phone |
+| `description` | TEXT | Request description |
+| `latitude` | DOUBLE PRECISION | Latitude |
+| `longitude` | DOUBLE PRECISION | Longitude |
+| `urgency` | TEXT | ALTA, MEDIA, BAJA |
+| `status` | TEXT | PENDING, APPROVED, REJECTED |
+| `metadata` | JSONB | Case ID and additional fields |
+
+### `work_reports`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `worker_name` | TEXT | Worker name |
+| `hours_worked` | DECIMAL | Hours worked |
+| `tasks_completed` | TEXT | Tasks completed |
+| `location_text` | TEXT | Textual location |
+| `latitude` | DOUBLE PRECISION | Latitude |
+| `longitude` | DOUBLE PRECISION | Longitude |
+| `metadata` | JSONB | Additional details |
+
+### `queries`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `case_id` | TEXT | Query ID |
+| `query_type` | TEXT | CONSULTA_NORMATIVA |
+| `question` | TEXT | User question |
+| `answer` | TEXT | Assistant answer |
+| `user_phone` | TEXT | User phone |
+| `user_name` | TEXT | User name |
+| `metadata` | JSONB | Additional details |
+
+### `fire_alerts`
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | UUID | Primary key |
+| `zone_name` | TEXT | Forest zone name |
+| `temperature` | DECIMAL | Temperature |
+| `humidity` | DECIMAL | Humidity |
+| `wind_speed` | DECIMAL | Wind speed |
+| `fire_risk` | TEXT | EXTREMO, ALTO, MODERADO, BAJO |
+| `alert_sent` | BOOLEAN | Whether alert was sent |
+| `created_at` | TIMESTAMP | Creation timestamp |
+
+### `conversation_state`
+
+| Column | Type | Description |
+|---|---|---|
+| `user_phone` | TEXT | User phone |
+| `current_state` | TEXT | Usually `waiting_coords` |
+| `pending_case_id` | TEXT | Case waiting for coordinates |
+| `pending_type` | TEXT | INCENDIO, PLAGA, PERMISO, INCIDENCIA |
+| `context_data` | JSONB | Optional context |
+| `created_at` | TIMESTAMP | Created at |
+| `updated_at` | TIMESTAMP | Updated at |
+
+---
+
+## PostGIS trigger example
+
+The `location` column in `forest_incidents` can be updated automatically from latitude and longitude.
+
+```sql
+CREATE OR REPLACE FUNCTION update_incident_location()
+RETURNS trigger AS $$
+BEGIN
+  IF NEW.latitude IS NOT NULL AND NEW.longitude IS NOT NULL THEN
+    NEW.location := ST_SetSRID(ST_MakePoint(NEW.longitude, NEW.latitude), 4326);
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER set_incident_location
 BEFORE INSERT OR UPDATE ON forest_incidents
 FOR EACH ROW
 EXECUTE FUNCTION update_incident_location();
-🔧 Key Workflow Nodes
-Node	Function
-Parse WhatsApp	Normalizes incoming WhatsApp messages (text, location, images, documents)
-Rate Limiter	15 messages per minute per conversation
-IF Es Consulta Normativa	Detects legal queries via regex
-Gemini Respuesta Legal	Legal RAG with layered context (fire, drones, AI, business, permits)
-Gemini Clasificar Incidencia	Classifies intent: FIRE, PEST, PERMIT, INCIDENT, WORK_REPORT
-Validar Coordenadas	Validates latitude/longitude ranges
-Reverse Geocoding	Converts coordinates to readable location via Google Maps API
-State Machine	PostgreSQL: Read State → IF pending → Extract Coordinates → Update Case → Clear State
-Switch	Routes to appropriate table (forest_incidents, permits, pest_cases, work_reports)
-Guardar en PostgreSQL	Saves data to respective table
-Preparar Respuesta Usuario	Formats response with case_id + readable location
-Enviar WhatsApp Supervisor	Notifies supervisor for HIGH priority cases
-Dashboard	Calculates metrics every 24h → Google Sheets + Email + WhatsApp
-🛡️ Security
-All API keys and tokens must be stored as environment variables — never hardcoded
+```
 
-The webhook verification endpoint handles Meta's challenge-response authentication
+---
 
-Rate limiting per conversation prevents abuse
+## Key workflow nodes
 
-Empty messages and "read" events are filtered to prevent loops
+| Node | Function |
+|---|---|
+| Parse WhatsApp | Normalizes incoming WhatsApp messages |
+| Rate Limiter | Limits messages per conversation |
+| PostgreSQL: Read State | Checks if the user has a pending case |
+| IF Pending State? | Routes coordinates to the pending case |
+| Extract Coordinates | Extracts latitude and longitude from text |
+| Build SQL Update | Updates the correct table for the pending case |
+| IF Legal Query? | Detects legal questions |
+| Gemini Legal Response | Generates legal/contextual response |
+| Gemini Classifier | Classifies operational intent |
+| Process Classification | Normalizes Gemini output and decides `crear_caso` |
+| IF Create Case? | Skips casual messages |
+| Validate Coordinates | Validates coordinate ranges |
+| Reverse Geocoding | Converts coordinates into readable location |
+| IF Missing Coordinates? | Saves pending state and asks for location |
+| Prepare Registration | Builds payload for the correct table |
+| Switch | Routes to `forest_incidents`, `pest_cases`, `permits`, or `work_reports` |
+| Prepare User Response | Formats user response with ID and location |
+| Notify Supervisor | Sends high-priority alerts |
+| Dashboard Metrics | Builds weekly metrics and reports |
 
-Row Level Security (RLS) can be enabled in PostgreSQL for multi-tenant setups
+---
 
-📄 License
+## Dashboard metrics
+
+The dashboard workflow runs daily and summarizes the last seven days.
+
+It collects:
+
+- total cases
+- incidents by type
+- high/medium/low priority totals
+- pest, permit, work report, and incident counts
+- legal query count
+- fire alert count
+- top locations
+- JSON snapshots for advanced dashboards
+
+Outputs:
+
+- Google Sheets historical row
+- email to supervisor
+- WhatsApp summary to supervisor
+
+---
+
+## Security notes
+
+- Store all API keys and tokens as environment variables.
+- Never commit `.env` files.
+- Do not hardcode Meta, Gemini, Google Maps, or OpenWeatherMap credentials.
+- Enable PostgreSQL Row Level Security if you adapt this for multi-tenant use.
+- Keep WhatsApp webhook verification tokens private.
+- Use rate limiting to reduce spam and repeated emergency messages.
+
+---
+
+## Roadmap
+
+- Multi-channel support for Instagram and Facebook Messenger
+- Live web dashboard with map
+- Duplicate incident detection
+- Supervisor assignment by zone or incident type
+- Case lifecycle management: open, in progress, resolved, closed
+- Photo analysis for pests and fire evidence
+- Automated PDF reports
+- Multi-tenant organization support
+
+---
+
+## License
+
 MIT License — free to use, modify, and distribute with attribution.
 
-🤝 Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+---
 
-👤 Author
-Alejandro Peralta — Process Automation Specialist
+## Author
 
-GitHub: @alejandro-orbis
+**Alejandro Peralta**  
+Process Automation Specialist
 
-LinkedIn: linkedin.com/in/alejandro-orbis
-
-Email: alejandro@orbisautomations.com
+- GitHub: [@alejandro-orbis](https://github.com/alejandro-orbis)
+- LinkedIn: [linkedin.com/in/alejandro-orbis](https://linkedin.com/in/alejandro-orbis)
+- Email: alejandro@orbisautomations.com
 
 Built with ❤️ using n8n, Google Gemini, and the Meta Business API.
 
-Created to protect our forests and optimize forest management — one message at a time.
-
-text
-
-
+Created to protect forests and optimize forest management — one message at a time.
