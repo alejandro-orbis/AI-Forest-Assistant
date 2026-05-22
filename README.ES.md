@@ -4,14 +4,15 @@
 
 Automatiza avisos de incendio, seguimiento de plagas, solicitudes de permisos, partes de trabajo, consultas legales, escalado a supervisores, alertas meteorológicas de riesgo de incendio y reportes automáticos de métricas.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/n8n-Workflow-orange?style=flat-square" />
-  <img src="https://img.shields.io/badge/Gemini-AI-4285F4?style=flat-square" />
-  <img src="https://img.shields.io/badge/WhatsApp-Business_API-25D366?style=flat-square" />
-  <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square" />
-  <img src="https://img.shields.io/badge/PostGIS-3.4-4169E1?style=flat-square" />
-  <img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square" />
-</p>
+[![n8n](https://img.shields.io/badge/n8n-Workflow-orange?style=flat-square)](https://n8n.io/)
+[![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4?style=flat-square&logo=google)](https://ai.google.dev)
+[![WhatsApp](https://img.shields.io/badge/WhatsApp-Business_API-25D366?style=flat-square&logo=whatsapp)](https://developers.facebook.com/docs/whatsapp)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql)](https://www.postgresql.org/)
+[![PostGIS](https://img.shields.io/badge/PostGIS-3.4-4169E1?style=flat-square)](https://postgis.net/)
+[![Google Maps](https://img.shields.io/badge/Google_Maps-API-4285F4?style=flat-square&logo=googlemaps)](https://mapsplatform.google.com/)
+[![OpenWeatherMap](https://img.shields.io/badge/OpenWeatherMap-API-FC4C02?style=flat-square)](https://openweathermap.org/api)
+[![License: MIT](https://img.shields.io/badge/License-MIT-22c55e?style=flat-square)](LICENSE)
+[![Status](https://img.shields.io/badge/Status-MVP-22c55e?style=flat-square)](https://github.com/alejandro-orbis)
 
 ---
 
