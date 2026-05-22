@@ -175,13 +175,35 @@ AI-Forest-Assistant/
 
 ## 🖼️ Screenshots
 
-| Workflow | WhatsApp | Dashboard |
-|---|---|---|
-| ![Workflow](assets/screenshots/workflow_overview.png) | ![WhatsApp](assets/screenshots/fire_alert_whatsapp.png) | ![Dashboard](assets/screenshots/dashboard_metrics.png) |
+### 🏗️ System Architecture
 
-| PostgreSQL | PostGIS | Google Sheets |
-|---|---|---|
-| ![Postgres](assets/screenshots/postgres_tables.png) | ![PostGIS](assets/screenshots/postgis_location.png) | ![Sheets](assets/screenshots/google_sheets_dashboard.png) |
+| Modular architecture | Core workflow |
+|---|---|
+| ![Architecture](assets/screenshots/workflow_architecture_overview.png) | ![Core Workflow](assets/screenshots/core_workflow_engine.png) |
+
+---
+
+### 🧠 AI & Automation
+
+| AI routing | Wildfire alert |
+|---|---|
+| ![Incident Routing](assets/screenshots/incident_routing_zoom.png) | ![Wildfire Alert](assets/screenshots/wildfire_incident_alert.png) |
+
+| Legal assistant | Pest geolocation |
+|---|---|
+| ![Legal Assistant](assets/screenshots/legal_assistant_query.png) | ![Pest Geolocation](assets/screenshots/pest_detection_geolocation.png) |
+
+---
+
+### 📊 Reporting & Persistence
+
+| Metrics workflow | Weather risk engine |
+|---|---|
+| ![Metrics Workflow](assets/screenshots/metrics_reporting.png) | ![Weather Risk](assets/screenshots/weather_risk_engine.png) |
+
+| Google Sheets dashboard | PostgreSQL |
+|---|---|
+| ![Sheets Dashboard](assets/screenshots/google_sheets_dashboard.png) | ![PostgreSQL](assets/screenshots/postgres_tables.png) |
 
 ---
 
